@@ -1,6 +1,7 @@
 require 'data_mapper'
 require 'dm-sqlite-adapter'
 require 'sinatra'
+require 'sinatra/base'
 
 DataMapper.setup(:default, "sqlite://#{Dir.pwd}/model/login.db")
 load "./model/User.rb"
@@ -12,7 +13,7 @@ DataMapper.auto_upgrade!
 enable :sessions
 
 get "/login" do
-	session["login"] = nil
+	session.delete(:login)
 	erb :form, :locals => {:wrong_password => params["wrong_password"]}
 end
 
@@ -50,7 +51,7 @@ end
 
 get "/" do
 	if session["login"]
-		"here will be an records"
+		Visits.all.inspect
 	else
 		redirect "/login"
 	end
