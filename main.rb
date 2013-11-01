@@ -3,40 +3,55 @@ require 'dm-sqlite-adapter'
 require 'sinatra'
 
 DataMapper.setup(:default, "sqlite://#{Dir.pwd}/model/login.db")
-require_relative "model/User.rb"
+load "./model/User.rb"
+load "./model/Visits.rb"
 
 DataMapper.finalize
-DataMapper.auto_migrate!
+DataMapper.auto_upgrade!	
 
 enable :sessions
 
 get "/login" do
-	erb :form
+	session["login"] = nil
+	erb :form, :locals => {:wrong_password => params["wrong_password"]}
 end
 
 post "/login" do
 
 	if params[:action] == "login"
-		user = User.get(:login => params[:login])
+		user = User.first(:login => params[:name])
 
-		if user != nil && user.password == Digest::MD5.hexdigest(params[:password])
+		if user != nil && user.verifyPassword(params[:password])
+			session["login"] = params[:name]
+			Visits.create(
+				:user_id => user.id
+			)
 			redirect "/"
 		else
-			redirect "/login"
+			redirect "/login?wrong_password=true"
 		end
 			
 	elsif params[:action] == "signup"
-		user = User.create(
-			:login 		=>	params[:login],
-			:password 	=>	Digest::MD5.hexdigest(params[:password]),
-		)
-		user.save
 
-		redirect "/"
+		user = User.create(
+					:login 		=>	params[:name],
+					:password 	=>	Digest::MD5.hexdigest(params[:password]),
+				)
+
+		session["login"] = params[:name]
+		Visits.create(
+				:user_id => user.id
+		)
+
+		redirect "/" 
 	end
 
 end
 
 get "/" do
-"here will be an records"
+	if session["login"]
+		"here will be an records"
+	else
+		redirect "/login"
+	end
 end

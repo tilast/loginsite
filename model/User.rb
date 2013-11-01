@@ -5,7 +5,7 @@ class User
 	property :login,	String		# login of user
 	property :password,	String
 
-	def autorizing
-
+	def verifyPassword(pass)
+		password == Digest::MD5.hexdigest(pass)
 	end
 end
